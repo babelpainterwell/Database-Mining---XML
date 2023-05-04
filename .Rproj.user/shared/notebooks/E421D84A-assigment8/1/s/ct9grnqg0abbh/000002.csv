@@ -1,0 +1,9 @@
+"0","```r
+library(RSQLite)
+
+fpath = getwd()
+dbfile = \"/sakila.db\"
+
+sqlitedb <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
+
+```"

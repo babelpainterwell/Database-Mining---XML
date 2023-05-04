@@ -1,0 +1,20 @@
+"0","```sql
+create table if not exists incidents(
+  rid integer not null auto_increment,
+  incidentdate date not null,
+  -- origin as foreign key linking airports through aid 
+  -- so it's an integer 
+  origin integer not null,
+  airline varchar(255) not null,
+  aircraft varchar(255) not null,
+  flightphase varchar(255) not null,
+  -- altitude here is character!!!
+  altitude varchar(255) not null,
+  conditions integer not null,
+  warning boolean not null,
+  primary key (rid),
+  foreign key (origin) references airports (aid),
+  foreign key (conditions) references conditions (cid)
+)
+
+```"

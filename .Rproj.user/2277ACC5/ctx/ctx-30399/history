@@ -1,0 +1,90 @@
+con <- dbConnect(RSQLite::SQLite(), dbfile)
+# Create a SQLite in-memory database connection
+# con <- dbConnect(RSQLite::SQLite(), ":memory:")
+dbfile = "pubmed.db"
+# Journals table
+dbExecute(con, "
+CREATE TABLE Journals (
+journal_id INTEGER PRIMARY KEY,
+ISSN TEXT,
+issn_type TEXT,
+title TEXT,
+iso_abbreviation TEXT,
+volume INTEGER,
+issue INTEGER,
+pub_year INTEGER,
+pub_month TEXT,
+pub_day INTEGER,
+cited_medium TEXT
+)")
+library(DBI)
+detach("package:DBI", unload = TRUE)
+install.packages("RSQLite")
+install.packages("RSQLite")
+# Load necessary packages
+library(DBI)
+# Load necessary packages
+library(DBI)
+library(RSQLite)
+library(RSQLite)
+# Create a SQLite in-memory database connection
+con <- dbConnect(RSQLite::SQLite(), "")
+# Journals table
+dbExecute(con, "
+CREATE TABLE Journals (
+journal_id INTEGER PRIMARY KEY,
+ISSN TEXT,
+issn_type TEXT,
+title TEXT,
+iso_abbreviation TEXT,
+volume INTEGER,
+issue INTEGER,
+pub_year INTEGER,
+pub_month TEXT,
+pub_day INTEGER,
+cited_medium TEXT
+)")
+# Journals table
+dbExecute(con, "
+CREATE TABLE Journals (
+journal_id INTEGER PRIMARY KEY,
+ISSN TEXT,
+issn_type TEXT,
+title TEXT,
+iso_abbreviation TEXT,
+volume INTEGER,
+issue INTEGER,
+pub_year INTEGER,
+pub_month TEXT,
+pub_day INTEGER,
+cited_medium TEXT
+)")
+print(fpath)
+dname <- "/pubmed.db"
+# Create a SQLite database connection to the "pubmed.db" file
+con <- dbConnect(RSQLite::SQLite(), db_path)
+# Authors table
+dbExecute(con, "
+CREATE TABLE Authors (
+author_id INTEGER PRIMARY KEY,
+last_name TEXT,
+fore_name TEXT,
+initials TEXT
+)")
+# Create a SQLite database connection to the "pubmed.db" file
+con <- dbConnect(RSQLite::SQLite(), db_path)
+# Journals table
+dbExecute(con, "
+CREATE TABLE Journals (
+journal_id INTEGER PRIMARY KEY,
+ISSN TEXT,
+issn_type TEXT,
+title TEXT,
+iso_abbreviation TEXT,
+volume INTEGER,
+issue INTEGER,
+pub_year INTEGER,
+pub_month TEXT,
+pub_day INTEGER,
+cited_medium TEXT
+)")

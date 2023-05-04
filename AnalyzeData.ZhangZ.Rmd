@@ -1,0 +1,75 @@
+---
+title: "AnalyzeData.ZhangZ"
+author: Zhongwei Zhang 
+---
+
+```{r}
+# Load necessary packages
+library(RMySQL)
+library(DBI)
+
+# Connect to the MySQL database
+con_mysql <- dbConnect(RMySQL::MySQL(), 
+                       dbname = "practicum2db",
+                       host = "localhost",
+                       user = "root",
+                       password = "Zzw@1299123")
+
+```
+
+```{sql connection=con_mysql}
+
+-- Top ten authors with the most publications.
+
+SELECT author_name, num_articles
+FROM author_fact
+ORDER BY num_articles DESC
+LIMIT 10
+
+-- Description: the top 10 authors with the highest number of publications, sorted in descending order of the number of articles
+-- Following are the results:
+-- Costa, E	      37			
+-- Thomas, E D	  34			
+-- Beckett, A H	  32			
+-- Storb, R	      31			
+-- Snyder, S H	  26			
+-- Lefkowitz, R J	25			
+-- Mandel, P	    25			
+-- Weiden, P L	  24			
+-- Meister, A	    23			
+-- Janssen, P A	  22	
+
+```
+
+```{sql connection=con_mysql}
+
+-- Top journal with the most articles per year.
+
+WITH yearly_journal_articles AS (
+  SELECT journal_name, year, SUM(num_articles) AS total_articles
+  FROM journal_fact
+  GROUP BY journal_name, year
+)
+, max_yearly_articles AS (
+  SELECT year, MAX(total_articles) AS max_articles
+  FROM yearly_journal_articles
+  GROUP BY year
+)
+SELECT yja.journal_name, yja.year, yja.total_articles
+FROM yearly_journal_articles yja
+JOIN max_yearly_articles mya ON yja.year = mya.year AND yja.total_articles = mya.max_articles
+ORDER BY yja.year
+
+-- Description: the journal with the most articles for each year, along with the total number of articles published in that year
+-- Following are the results:
+-- The Journal of pharmacy and pharmacology	                                 1975	1036		
+-- Comparative biochemistry and physiology. A, Comparative physiology	       1976	280		
+-- Aktuelle Probleme in Chirurgie und Orthopadie	                           1977	49		
+-- The Journal of clinical psychiatry	                                       1978	22	
+
+```
+
+```{sql connection=con_mysql}
+
+```
+

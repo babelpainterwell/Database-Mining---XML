@@ -1,0 +1,6 @@
+"0","
+-- Get the total number of distinct author ids with associated articles
+SELECT COUNT(DISTINCT a.id) 
+FROM authors a 
+JOIN article_authors aa ON a.id = aa.author_id;
+"

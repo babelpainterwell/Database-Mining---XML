@@ -1,0 +1,8 @@
+"0","```sql
+
+-- Create a rating index for the rating column of the film table 
+
+create index idx_film_rating 
+on film (rating) 
+
+```"

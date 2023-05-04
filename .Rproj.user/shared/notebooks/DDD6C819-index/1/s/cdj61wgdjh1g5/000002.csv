@@ -1,0 +1,73 @@
+"0","```r
+
+# DEALING WITH MISSING VALUES BY DEFAULT VALUES - ASSUMPTIONS
+
+# for missing flight date, set default value at \"12/17/1999  12:00:00 AM\" 
+# Since 1999 is not a normal year in a database recording incidents since 2000, we can easily filter out the filled data rows in later sql analysis exercise 
+
+# for missing missing airline, set default value at \"UNKNOWN\" 
+
+# for missing missing airport, set default value at \"UNKNOWN\"
+
+# for missing missing aircraft, set default value at \"Airplane\"
+
+# for missing missing flight phase, set default value at \"takeoff\" 
+# Also clean the flight phase data column to contain only four values: takeoff, landing, inflight, unknown 
+# takeoff includes: Climb, Take-off run, landing includes: Landing Roll, Approach, inflight includes Descent
+
+# for missing values in altitude, set default value as '1000', which is a normal altitude while taking off 
+
+# for missing values in sky condition, set default value as 'No Cloud'
+
+# for missing values in warning flags, set default value as 'N'
+
+n.raw <- nrow(df.raw)
+
+for (i in 1:n.raw) {
+  if (df.raw$flight_date[i] == \"\") {
+    df.raw$flight_date[i] = \"12/17/1999  12:00:00 AM\" 
+  }
+  if (df.raw$airline[i] == \"\") {
+    df.raw$airline[i] = \"UNKNOWN\"
+  }
+  # if the airport is unknown, we transform its origin to unknown as well 
+  if (df.raw$airport[i] == \"\") {
+    df.raw$airport[i] = \"UNKNOWN\"
+    df.raw$origin[i] = \"UNKNOWN\"
+  }
+  
+  if (df.raw$aircraft[i] == \"\") {
+    df.raw$aircraft[i] = \"Airplane\"
+  }
+  
+  if (df.raw$flight_phase[i] == \"\"){
+    df.raw$flight_phase[i] = \"takeoff\"
+  }
+  else if (df.raw$flight_phase[i] == \"Climb\" | df.raw$flight_phase[i] == \"Take-off run\") {
+    df.raw$flight_phase[i] = \"takeoff\"
+  }
+  else if (df.raw$flight_phase[i] == \"Descent\") {
+    df.raw$flight_phase[i] = \"inflight\"
+  }
+  else if (df.raw$flight_phase[i] == \"Landing Roll\" | df.raw$flight_phase[i] == \"Approach\") {
+    df.raw$flight_phase[i] = \"landing\"
+  }
+  else {
+    df.raw$flight_phase[i] = \"unknown\"
+  }
+  
+  if (df.raw$altitude_ft[i] == \"\"){
+    df.raw$altitude_ft[i] = \"1000\"
+  }
+  
+  if (df.raw$sky_conditions[i] == \"\"){
+    df.raw$sky_conditions[i] = \"No Cloud\"
+  }
+  
+  if (df.raw$pilot_warned_flag[i] == \"\"){
+    df.raw$pilot_warned_flag[i] = \"N\"
+  }
+}
+
+
+```"

@@ -1,0 +1,18 @@
+"0","```r
+
+# SHOW IN R THE PROCEDURE WORKS 
+# add a new incident, containing a new airport named 'New Airport For Test'
+
+result <- dbGetQuery(mydb, \"call AddIncident('1999-12-17', 'New Airpot For Test1', 'Jason Airline', 'Airplane', 'takeoff', '800', 'Overcast', TRUE)\")
+
+
+# display the newly added row from the incidents table
+# display the newly added airport 
+# Note: if the incident happens at an airport that is already in the airports table, the command below will also display the information of that already-existing airport.
+
+new_incident <- dbGetQuery(mydb, \"select * from incidents where rid = LAST_INSERT_ID()\")
+new_airport <- dbGetQuery(mydb, \"select * from airports where aid = (select origin from incidents where rid = LAST_INSERT_ID() )\")
+
+# print out the new incident
+print(new_incident)
+```"

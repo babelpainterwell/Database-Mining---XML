@@ -1,0 +1,14 @@
+"0","```r
+library(RSQLite)
+
+\"/Users/wellzhang/Desktop/Align/5200/Assignments/Zhang.Query_Dataframe_In_R/\"
+```"
+"1","[1] \"/Users/wellzhang/Desktop/Align/5200/Assignments/Zhang.Query_Dataframe_In_R/\"
+"
+"0","```r
+fpath = getwd()
+dbfile = \"/MediaDB.db\"
+
+dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
+
+```"

@@ -1,0 +1,15 @@
+"0","```sql
+
+# FIND THE MAXIMUM NUMBER OF BIRD STRIKE INCIDENTS BY MONTH (ACROSS ALL YEARS). INCLUDE ALL AIRLINES AND ALL FLIGHTS
+# Since the default incident date was set to be \"1999-12-17\" and no other incidents have this value
+# All data rows with incident date \"1999-12-17\" are filtered out
+
+select
+  month(incidentdate) as 'month'
+  , count(*) as total_incidents
+from incidents
+where incidentdate != '1999-12-17'
+group by 1
+order by 2 desc
+limit 1
+```"

@@ -1,0 +1,3 @@
+"0","
+-- Get the total number of distinct author ids
+SELECT COUNT(DISTINCT id) FROM authors;"

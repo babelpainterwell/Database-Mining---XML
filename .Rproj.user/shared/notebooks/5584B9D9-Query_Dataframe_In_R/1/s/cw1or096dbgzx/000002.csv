@@ -1,0 +1,12 @@
+"0","```r
+
+if(\"sqldf\" %in% rownames(installed.packages()) == FALSE) {
+  install.packages(\"sqldf\")
+}
+
+library(sqldf)
+
+sqlCmd = \"select InvoiceId, sum(ExtPrice) as Total, count(*) as Num_Items from rs group by InvoiceId\"
+q2_result_table = sqldf(sqlCmd)
+q2_result_table 
+```"

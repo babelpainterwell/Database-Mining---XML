@@ -1,0 +1,6 @@
+"0","```r
+
+# remove all military flights from data frame df.raw 
+df.raw = df.raw[df.raw$airline != \"MILITARY\", ]
+
+```"

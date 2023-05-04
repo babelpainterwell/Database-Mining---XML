@@ -1,0 +1,13 @@
+"0","```r
+rs <- dbGetQuery(dbcon, \"select * from invoice_items\")
+
+rs$ExtPrice <- NA
+
+# ***update the database???
+rs$ExtPrice <- rs$Quantity * rs$UnitPrice
+
+average_extended_price <- round(mean(rs$ExtPrice), 2)
+average_extended_price
+```"
+"1","[1] 1.04
+"

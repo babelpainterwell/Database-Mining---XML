@@ -1,0 +1,464 @@
+---
+title: "Practicum1 
+Author: Zhongwei Zhang"
+Email: zhang.zhongw@northeastern.edu
+output: html_notebook
+---
+
+
+```{r}
+
+# 1. Library 
+library(RMySQL)
+
+# 2. Settings 
+
+# Local MySQL Server 
+db_user <- "root"
+db_password <- "Zzw@1299123"
+db_host <- "localhost" 
+db_name <- "Practicum1DB"
+db_port <- 3306 
+
+# AWS
+# db_user <- "well"
+# db_password <- "abcdefgh"
+# db_host <- "cs5200-dbs.cpwyxeojne7s.us-east-2.rds.amazonaws.com" 
+# db_name <- "Practicum1DB"
+
+
+# db4free.net
+# db_user <- "well17"
+# db_name <- "practicum1db17"
+# db_host <- "db4free.net" 
+# db_password <- "12345678"
+
+# 3. Read data from DB
+
+mydb <- dbConnect(MySQL(), user = db_user, password = db_password,
+                  dbname = db_name, host = db_host, port = db_port)
+
+
+```
+
+<!-- Task1 B -->
+```{sql connection=mydb}
+create table if not exists airports(
+  aid integer not null auto_increment,
+  airportname varchar(255) not null,
+  airportcode varchar(255),
+  state varchar(255) not null,
+  primary key (aid)
+)
+
+```
+
+<!-- Task1 D -->
+```{sql connection=mydb}
+create table if not exists conditions (
+  cid integer not null auto_increment,
+  `condition` varchar(255) not null,
+  explanation varchar(255),
+  primary key (cid)
+);
+
+```
+
+<!-- Task1 A -->
+```{sql connection=mydb}
+create table if not exists incidents(
+  rid integer not null auto_increment,
+  incidentdate date not null,
+  -- origin as foreign key linking airports through aid 
+  -- so it's an integer 
+  origin integer not null,
+  airline varchar(255) not null,
+  aircraft varchar(255) not null,
+  flightphase varchar(255) not null,
+  -- altitude here is character!!!
+  altitude varchar(255) not null,
+  conditions integer not null,
+  warning boolean not null,
+  primary key (rid),
+  foreign key (origin) references airports (aid),
+  foreign key (conditions) references conditions (cid)
+)
+
+```
+
+
+<!-- Task2 -->
+```{r}
+
+fn = "BirdStrikesData-V2.csv"
+#fpath = getwd()
+#file_name = paste0(fpath, "/BirdStrikesData-V2.csv")
+
+df.raw <- read.csv(file = fn,
+                   header = T,
+                   stringsAsFactors = F)
+
+head(df.raw, 10)
+```
+
+```{r}
+# set backing store to SQLite for sqldf
+
+options(sqldf.driver = 'SQLite')
+```
+
+<!-- Task1 G -->
+```{r}
+
+# remove all military flights from data frame df.raw 
+df.raw = df.raw[df.raw$airline != "MILITARY", ]
+
+```
+
+
+
+<!-- Task1 E, Task2 -->
+```{r}
+
+# DEALING WITH MISSING VALUES BY DEFAULT VALUES - ASSUMPTIONS
+
+# for missing flight date, set default value at "12/17/1999  12:00:00 AM" 
+# Since 1999 is not a normal year in a database recording incidents since 2000, we can easily filter out the filled data rows in later sql analysis exercise 
+
+# for missing missing airline, set default value at "UNKNOWN" 
+
+# for missing missing airport, set default value at "UNKNOWN"
+
+# for missing missing aircraft, set default value at "Airplane"
+
+# for missing missing flight phase, set default value at "takeoff" 
+# Also clean the flight phase data column to contain only four values: takeoff, landing, inflight, unknown 
+# takeoff includes: Climb, Take-off run, landing includes: Landing Roll, Approach, inflight includes Descent
+
+# for missing values in altitude, set default value as '1000', which is a normal altitude while taking off 
+
+# for missing values in sky condition, set default value as 'No Cloud'
+
+# for missing values in warning flags, set default value as 'N'
+
+n.raw <- nrow(df.raw)
+
+for (i in 1:n.raw) {
+  if (df.raw$flight_date[i] == "") {
+    df.raw$flight_date[i] = "12/17/1999  12:00:00 AM" 
+  }
+  if (df.raw$airline[i] == "") {
+    df.raw$airline[i] = "UNKNOWN"
+  }
+  # if the airport is unknown, we transform its origin to unknown as well 
+  if (df.raw$airport[i] == "") {
+    df.raw$airport[i] = "UNKNOWN"
+    df.raw$origin[i] = "UNKNOWN"
+  }
+  
+  if (df.raw$aircraft[i] == "") {
+    df.raw$aircraft[i] = "Airplane"
+  }
+  
+  if (df.raw$flight_phase[i] == ""){
+    df.raw$flight_phase[i] = "takeoff"
+  }
+  else if (df.raw$flight_phase[i] == "Climb" | df.raw$flight_phase[i] == "Take-off run") {
+    df.raw$flight_phase[i] = "takeoff"
+  }
+  else if (df.raw$flight_phase[i] == "Descent") {
+    df.raw$flight_phase[i] = "inflight"
+  }
+  else if (df.raw$flight_phase[i] == "Landing Roll" | df.raw$flight_phase[i] == "Approach") {
+    df.raw$flight_phase[i] = "landing"
+  }
+  else {
+    df.raw$flight_phase[i] = "unknown"
+  }
+  
+  if (df.raw$altitude_ft[i] == ""){
+    df.raw$altitude_ft[i] = "1000"
+  }
+  
+  if (df.raw$sky_conditions[i] == ""){
+    df.raw$sky_conditions[i] = "No Cloud"
+  }
+  
+  if (df.raw$pilot_warned_flag[i] == ""){
+    df.raw$pilot_warned_flag[i] = "N"
+  }
+}
+
+
+```
+
+
+
+
+<!-- Task2 -->
+```{r}
+
+# select a fixed value for origin(int) and conditions(int), which are foreign keys 
+df.incidents <- sqldf::sqldf("select rid, flight_date as incidentdate, 1 as origin, airline, aircraft, flight_phase as flightphase, altitude_ft as altitude, 1 as conditions, pilot_warned_flag as warning from 'df.raw' ")
+
+
+# Manipulate on the data - change data types 
+n.incidents <- nrow(df.incidents)
+
+for (i in 1:n.incidents) {
+  # manipulate on 'date'
+  df.incidents$incidentdate[i] = strsplit(df.incidents$incidentdate[i], " ")[[1]][1]
+  
+  # manipulate on 'warning'
+  if (df.incidents$warning[i] == 'Y') {
+    df.incidents$warning[i] = TRUE 
+  }
+  else {
+    df.incidents$warning[i] = FALSE
+  }
+}
+
+# Cast incident date into date data types 
+# Cast origin, conditions and altitude_ft all into integer data types
+df.incidents$incidentdate <- as.Date(df.incidents$incidentdate, format = "%m/%d/%Y")
+df.incidents$origin <- as.integer(df.incidents$origin)
+df.incidents$conditions <- as.integer(df.incidents$conditions)
+df.incidents$altitude_ft < as.integer(df.incidents$altitude_ft)
+
+
+# Note: Running this chunk code might pop out an error message like: tcltk DLL is linked to '/opt/X11/lib/libX11.6.dylib'. However, no negative impacts will be generated.
+
+```
+
+<!-- Task2 -->
+```{r}
+
+df.airports <- sqldf::sqldf("select 1 as aid, airport as airportname, 'UNKNOWN' as airportcode, origin as state from 'df.raw' group by airport ")
+n.airports <- nrow(df.airports)
+df.airports[,1] <- seq(1, n.airports)
+
+# Note: Running this chunk code might pop out an error message like: tcltk DLL is linked to '/opt/X11/lib/libX11.6.dylib'. However, no negative impacts will be generated.
+
+```
+
+<!-- Task2 -->
+```{r}
+
+df.conditions <- sqldf::sqldf("select 1 as cid, sky_conditions as condition, 'UNKNOWN' as explanation from 'df.raw' group by sky_conditions")
+n.conditions <- nrow(df.conditions)
+df.conditions[,1] <- seq(1, n.conditions)
+
+# Note: Running this chunk code might pop out an error message like: tcltk DLL is linked to '/opt/X11/lib/libX11.6.dylib'. However, no negative impacts will be generated.
+```
+
+<!-- Task2 -->
+```{r}
+# Link Tables 
+
+# 1. link airports to incidents 
+# 2. link conditions to incidents 
+for (i in 1:n.incidents) {
+  aid <- df.airports$aid[which(df.airports$airportname == df.raw$airport[i])]
+  cid <- df.conditions$cid[which(df.conditions$condition == df.raw$sky_conditions[i])]
+    
+  df.incidents$origin[i] <- aid
+  df.incidents$conditions[i] <- cid 
+}
+
+head(df.incidents, 30)
+
+
+```
+
+<!-- Task2 -->
+```{r}
+
+# Save to existing schemas 
+
+dbWriteTable(mydb, "airports", df.airports,  append = TRUE, row.names = FALSE, overwrite = FALSE)
+dbWriteTable(mydb, "conditions", df.conditions, append = TRUE, row.names = FALSE, overwrite = FALSE)
+dbWriteTable(mydb, "incidents", df.incidents, append = TRUE, row.names = FALSE, overwrite = FALSE)
+
+```
+
+<!-- Task3 -->
+```{sql connection=mydb}
+
+# SHOW THE FIRST 100 ROWS OF INCIDENTS TABLE 
+
+select * from incidents limit 100;
+
+```
+
+<!-- Task3 -->
+```{sql connection=mydb}
+
+# SHOW THE FIRST 100 ROWS OF AIRPORTS TABLE 
+
+select * from airports limit 100;
+
+```
+
+<!-- Task3 -->
+```{sql connection=mydb}
+
+# SHOW THE CONDITIONS TABLE 
+
+select * from conditions;
+
+```
+
+<!-- Task 4 -->
+```{sql connection=mydb}
+
+# FIND THE TOP 10 AIRLINES WITH THE MOST NUMBER OF INCIDENTS 
+# both airline name and number of incidents are displayed 
+# if only airlinr names need to be displayed, use current chunk as a subquery and select airline from it
+
+select airline, count(*) from incidents 
+group by 1 
+order by 2 DESC
+limit 10
+
+
+
+```
+
+
+<!-- Task 5 --> 
+```{sql connection=mydb}
+
+# FIND THE FLIGHT PHASE THAT HAD AN ABOVE AVERAGE NUMBER BIRD STRIKE INCIDENTS 
+# both fligh phase names and number of incidents are displayed.
+
+select flightphase from
+(
+select flightphase, count(*) as total_incidents from incidents 
+group by 1
+) as t1 
+where total_incidents > (select avg(total_incidents) from (select flightphase, count(*) as total_incidents from incidents 
+group by 1) as t2)
+
+
+```
+
+<!-- Task 6 --> 
+```{sql connection=mydb}
+
+# FIND THE MAXIMUM NUMBER OF BIRD STRIKE INCIDENTS BY MONTH (ACROSS ALL YEARS). INCLUDE ALL AIRLINES AND ALL FLIGHTS
+# Since the default incident date was set to be "1999-12-17" and no other incidents have this value
+# All data rows with incident date "1999-12-17" are filtered out
+
+select
+  month(incidentdate) as 'month'
+  , count(*) as total_incidents
+from incidents
+where incidentdate != '1999-12-17'
+group by 1
+order by 2 desc
+limit 1
+```
+
+
+
+<!-- Task 7 --> 
+```{r}
+library(ggplot2)
+
+sql_command = "select year(incidentdate) as year
+  ,count(*) as total_incidents 
+from incidents 
+where incidentdate between '2005-01-01' and '2011-12-31' 
+group by 1 
+order by year(incidentdate) asc"
+
+df <- dbGetQuery(mydb, sql_command)
+
+#barplot(x = df$year, y = df$total_incidents, xlab="Year", ylab="Total Incidents", main="Bird Strikes Over 2005-2011")
+
+ggplot(df, aes(x = year, y = total_incidents)) + 
+  geom_col(fill = "skyblue") +
+  geom_text(aes(label = total_incidents, vjust = -0.5)) +
+  labs(title = "Bird Strikes from 2005 to 2011", x = "Year", y = "Total Incidents")
+
+```
+
+<!-- Task 8 --> 
+```{sql connection=mydb}
+# The rid field is an auto-incremented primary key field in the incidents table, so it will automatically be assigned a unique value by MySQL when the record is inserted.
+create procedure AddIncident(
+  in incidentdate date,
+  in airport_name varchar(255),
+  in airline varchar(255),
+  in aircraft varchar(255),
+  in flightphase varchar(255),
+  in altitude varchar(255),
+  in conditions_text varchar(255),
+  in warning boolean
+)
+begin 
+
+  declare origin_id integer;
+  declare conditions_id integer;
+  
+  -- get the airport ID for the given airport name
+  select aid into origin_id 
+  from airports 
+  where airportname = airport_name limit 1;
+  
+  -- account for new airport 
+  -- if there is a new airport, add the new airport to airports table and assign 
+  -- the new aid as the origin of the new incident 
+  if origin_id is null then 
+    insert into airports (airportname, airportcode, state)
+      values(airport_name, 'UNKNOWN', 'UNKNOWN');
+    set origin_id = LAST_INSERT_ID();
+  end if;
+  
+  -- get the condition ID for the given condition text
+  select cid into conditions_id
+  from conditions 
+  where `condition` = conditions_text limit 1;
+  
+  
+  -- insert the new incident record
+  insert into incidents (incidentdate, origin, airline, aircraft, flightphase, altitude, conditions, warning)
+    values (incidentdate, origin_id, airline, aircraft, flightphase, altitude, conditions_id, warning);
+  
+end;
+
+
+    
+# The LAST_INSERT_ID() is used to retrieve the auto-generated value for the most recently inserted row, so you can use this function to retrieve the rid of the newly added incident record if you need it
+
+```
+
+<!-- Task 8 --> 
+```{r}
+
+# SHOW IN R THE PROCEDURE WORKS 
+# add a new incident, containing a new airport named 'New Airport For Test'
+
+result <- dbGetQuery(mydb, "call AddIncident('1999-12-17', 'New Airpot For Test1', 'Jason Airline', 'Airplane', 'takeoff', '800', 'Overcast', TRUE)")
+
+
+# display the newly added row from the incidents table
+# display the newly added airport 
+# Note: if the incident happens at an airport that is already in the airports table, the command below will also display the information of that already-existing airport.
+
+new_incident <- dbGetQuery(mydb, "select * from incidents where rid = LAST_INSERT_ID()")
+new_airport <- dbGetQuery(mydb, "select * from airports where aid = (select origin from incidents where rid = LAST_INSERT_ID() )")
+
+# print out the new incident
+print(new_incident)
+print(new_airport)
+```
+
+
+
+
+```{r}
+dbDisconnect(mydb) 
+```
+
+

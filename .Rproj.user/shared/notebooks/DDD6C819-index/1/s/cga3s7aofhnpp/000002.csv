@@ -1,0 +1,7 @@
+"0","```sql
+
+# SHOW THE FIRST 100 ROWS OF INCIDENTS TABLE 
+
+select * from incidents limit 100;
+
+```"

@@ -1,0 +1,14 @@
+"0","```sql
+
+# FIND THE TOP 10 AIRLINES WITH THE MOST NUMBER OF INCIDENTS 
+# both airline name and number of incidents are displayed 
+# if only airlinr names need to be displayed, use current chunk as a subquery and select airline from it
+
+select airline, count(*) from incidents 
+group by 1 
+order by 2 DESC
+limit 10
+
+
+
+```"

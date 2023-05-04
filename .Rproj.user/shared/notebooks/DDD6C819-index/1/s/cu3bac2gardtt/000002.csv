@@ -1,0 +1,7 @@
+"0","```sql
+
+# SHOW THE CONDITIONS TABLE 
+
+select * from conditions;
+
+```"

@@ -1,0 +1,7 @@
+"0",""
+"0","library(RMySQL)"
+"0","db1 <- dbConnect(RMySQL::MySQL(), "
+"0","                       dbname = ""practicum2db"","
+"0","                       host = ""localhost"","
+"0","                       user = ""root"","
+"0","                       password = ""Zzw@1299123"")"

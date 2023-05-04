@@ -1,0 +1,8 @@
+"0","```r
+display_df <- dbGetQuery(dbcon, \"select * from invoices\")
+```"
+"1","Warning: Closing open result set, pending rows
+"
+"0","```r
+head(display_df,10)
+```"

@@ -1,0 +1,10 @@
+"0","```sql
+
+-- Inspect the query plan in MySQL
+
+explain 
+select * 
+from film
+where rating = \"PG\"
+
+```"

@@ -1,0 +1,12 @@
+"0","```r
+
+fn = \"BirdStrikesData-V2.csv\"
+#fpath = getwd()
+#file_name = paste0(fpath, \"/BirdStrikesData-V2.csv\")
+
+df.raw <- read.csv(file = fn,
+                   header = T,
+                   stringsAsFactors = F)
+
+head(df.raw, 10)
+```"

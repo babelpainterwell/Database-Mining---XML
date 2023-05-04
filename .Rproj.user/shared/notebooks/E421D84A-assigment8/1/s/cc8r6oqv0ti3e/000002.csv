@@ -1,0 +1,10 @@
+"0","```sql
+SELECT
+   `type`, 
+   `name`, 
+   `tbl_name`, 
+   `sql`
+  FROM sqlite_master
+WHERE `type` = 'index';
+
+```"

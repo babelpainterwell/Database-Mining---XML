@@ -1,0 +1,5 @@
+"0","```r
+# set backing store to SQLite for sqldf
+
+options(sqldf.driver = 'SQLite')
+```"

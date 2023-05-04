@@ -1,0 +1,23 @@
+"0","```r
+library(ggplot2)
+```"
+"1","Need help? Try Stackoverflow: https://stackoverflow.com/tags/ggplot2
+"
+"0","```r
+sql_command = \"select year(incidentdate) as year
+  ,count(*) as total_incidents 
+from incidents 
+where incidentdate between '2005-01-01' and '2011-12-31' 
+group by 1 
+order by year(incidentdate) asc\"
+
+df <- dbGetQuery(mydb, sql_command)
+
+#barplot(x = df$year, y = df$total_incidents, xlab=\"Year\", ylab=\"Total Incidents\", main=\"Bird Strikes Over 2005-2011\")
+
+ggplot(df, aes(x = year, y = total_incidents)) + 
+  geom_col(fill = \"skyblue\") +
+  geom_text(aes(label = total_incidents, vjust = -0.5)) +
+  labs(title = \"Bird Strikes from 2005 to 2011\", x = \"Year\", y = \"Total Incidents\")
+
+```"

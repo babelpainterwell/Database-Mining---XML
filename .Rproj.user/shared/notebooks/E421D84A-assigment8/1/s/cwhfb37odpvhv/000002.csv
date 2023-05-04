@@ -1,0 +1,14 @@
+"0","```r
+# Library 
+library(RMySQL)
+
+# Local MySQL Server 
+db_user <- \"root\"
+db_password <- \"Zzw@1299123\"
+db_host <- \"localhost\" 
+db_name <- \"sakila\"
+db_port <- 3306 
+
+mysqldb <- dbConnect(MySQL(), user = db_user, password = db_password,
+                  dbname = db_name, host = db_host, port = db_port)
+```"

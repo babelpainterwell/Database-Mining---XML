@@ -1,0 +1,21 @@
+"0","
+-- Top ten authors with the most publications.
+
+SELECT author_name, num_articles
+FROM author_fact
+ORDER BY num_articles DESC
+LIMIT 10
+
+-- Description: the top 10 authors with the highest number of publications, sorted in descending order of the number of articles
+-- Following are the results:
+-- Costa, E	      37			
+-- Thomas, E D	  34			
+-- Beckett, A H	  32			
+-- Storb, R	      31			
+-- Snyder, S H	  26			
+-- Lefkowitz, R J	25			
+-- Mandel, P	    25			
+-- Weiden, P L	  24			
+-- Meister, A	    23			
+-- Janssen, P A	  22	
+"

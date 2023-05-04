@@ -1,0 +1,17 @@
+"0","```sql
+explain
+select
+    c.name as category_name,
+    AVG(f.rental_duration) as avg_rental_duration
+from
+    film f
+join
+    film_category fc on f.film_id = fc.film_id
+join
+    category c on fc.category_id = c.category_id
+group by
+    c.name
+order by
+    avg_rental_duration desc
+limit 5;
+```"

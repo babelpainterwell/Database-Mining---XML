@@ -1,0 +1,25 @@
+"0","```r
+
+invoice_df <- dbGetQuery(dbcon, \"select * from invoices\")
+invoice_df$DiscPrice = invoice_df$Total
+invoice_df$num_items = q2_result_table$Num_Items
+
+
+
+for (i in 1:length(invoice_df)) {
+  if (invoice_df[i, 11] > 5) {
+    invoice_df[i, 10] = invoice_df[i, 9] * 0.9
+  }
+}
+
+
+# overwrite the database with invoice_df
+
+dbWriteTable(dbcon, \"invoices\", invoice_df, overwrite = TRUE)
+dbSendQuery(dbcon, \"alter table invoices drop column num_items\")
+```"
+"1","<SQLiteResult>
+  SQL  alter table invoices drop column num_items
+  ROWS Fetched: 0 [complete]
+       Changed: 0
+"

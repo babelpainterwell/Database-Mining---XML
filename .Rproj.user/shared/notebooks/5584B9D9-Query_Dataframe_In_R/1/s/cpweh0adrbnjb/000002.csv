@@ -1,0 +1,4 @@
+"0","```r
+
+plot(x = q2_result_table$Num_Items, y =q2_result_table$Total, xlab=\"Number of Items\", ylab=\"Total Amount\", main=\"Problem 3 Result\")
+```"

@@ -1,0 +1,7 @@
+"0","```sql
+
+# SHOW THE FIRST 100 ROWS OF AIRPORTS TABLE 
+
+select * from airports limit 100;
+
+```"

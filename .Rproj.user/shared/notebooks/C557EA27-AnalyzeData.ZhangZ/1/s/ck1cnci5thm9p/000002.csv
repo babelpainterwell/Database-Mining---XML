@@ -1,0 +1,7 @@
+"0","
+SELECT author_name, num_articles
+FROM author_fact
+ORDER BY num_articles DESC
+LIMIT 10
+
+"

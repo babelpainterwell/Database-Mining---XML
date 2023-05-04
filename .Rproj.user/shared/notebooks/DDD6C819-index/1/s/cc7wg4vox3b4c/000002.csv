@@ -1,0 +1,13 @@
+"0","```r
+
+df.airports <- sqldf::sqldf(\"select 1 as aid, airport as airportname, 'UNKNOWN' as airportcode, origin as state from 'df.raw' group by airport \")
+```"
+"1","tcltk DLL is linked to '/opt/X11/lib/libX11.6.dylib'
+"
+"0","```r
+n.airports <- nrow(df.airports)
+df.airports[,1] <- seq(1, n.airports)
+
+# Note: Running this chunk code might pop out an error message like: tcltk DLL is linked to '/opt/X11/lib/libX11.6.dylib'. However, no negative impacts will be generated.
+
+```"

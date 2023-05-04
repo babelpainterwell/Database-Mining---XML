@@ -1,0 +1,10 @@
+"0","```sql
+create table if not exists airports(
+  aid integer not null auto_increment,
+  airportname varchar(255) not null,
+  airportcode varchar(255),
+  state varchar(255) not null,
+  primary key (aid)
+)
+
+```"

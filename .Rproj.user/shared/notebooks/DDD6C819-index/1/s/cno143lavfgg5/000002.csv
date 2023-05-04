@@ -1,0 +1,4 @@
+"1","Error in .local(conn, statement, ...) : 
+  could not run statement: PROCEDURE AddIncident already exists
+Failed to execute SQL chunk
+"

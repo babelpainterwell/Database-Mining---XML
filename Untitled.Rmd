@@ -1,0 +1,44 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+
+library(RSQLite)
+db <- dbConnect(RSQLite::SQLite(), dbname = "pubmed.db")
+```
+
+```{r}
+
+library(RMySQL)
+db1 <- dbConnect(RMySQL::MySQL(), 
+                       dbname = "practicum2db",
+                       host = "localhost",
+                       user = "root",
+                       password = "Zzw@1299123")
+```
+
+```{sql connection=db}
+select count(*) from journals 
+
+```
+
+
+```{sql connection=db}
+
+-- Get the total number of distinct author ids
+SELECT COUNT(DISTINCT id) FROM authors;
+```
+
+```{sql connection=db}
+
+-- Get the total number of distinct author ids with associated articles
+SELECT COUNT(DISTINCT a.id) 
+FROM authors a 
+JOIN article_authors aa ON a.id = aa.author_id;
+
+```
+

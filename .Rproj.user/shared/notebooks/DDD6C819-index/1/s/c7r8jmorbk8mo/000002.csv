@@ -1,0 +1,15 @@
+"0","```r
+# Link Tables 
+
+# 1. link airports to incidents 
+# 2. link conditions to incidents 
+for (i in 1:n.incidents) {
+  aid <- df.airports$aid[which(df.airports$airportname == df.raw$airport[i])]
+  cid <- df.conditions$cid[which(df.conditions$condition == df.raw$sky_conditions[i])]
+    
+  df.incidents$origin[i] <- aid
+  df.incidents$conditions[i] <- cid 
+}
+
+head(df.incidents, 30)
+```"

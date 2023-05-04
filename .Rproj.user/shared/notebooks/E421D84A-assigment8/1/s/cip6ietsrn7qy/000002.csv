@@ -1,0 +1,12 @@
+"0","```sql
+explain
+select
+    customer_id,
+    COUNT(*) as num_rentals
+from
+    rental
+where
+    rental_id > 1000
+group by 
+    customer_id
+```"

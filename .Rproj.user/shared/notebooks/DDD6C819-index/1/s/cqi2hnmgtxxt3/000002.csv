@@ -1,0 +1,15 @@
+"0","```sql
+
+# FIND THE FLIGHT PHASE THAT HAD AN ABOVE AVERAGE NUMBER BIRD STRIKE INCIDENTS 
+# both fligh phase names and number of incidents are displayed.
+
+select flightphase from
+(
+select flightphase, count(*) as total_incidents from incidents 
+group by 1
+) as t1 
+where total_incidents > (select avg(total_incidents) from (select flightphase, count(*) as total_incidents from incidents 
+group by 1) as t2)
+
+
+```"

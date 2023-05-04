@@ -1,0 +1,87 @@
+# Load necessary packages
+library(DBI)
+library(RSQLite)
+library(XML)
+
+# Get the current working directory and create the database file path
+fpath <- getwd()
+dname <- "/pubmed.db"
+db_path <- paste0(fpath, dname)
+xml_path <- paste0(fpath, "/pubmed-tfm-xml/test.xml")
+
+# Create a SQLite database connection to the "pubmed.db" file
+con <- dbConnect(RSQLite::SQLite(), db_path)
+
+# Load XML file
+xml_file <- xml_path
+xml_data <- xmlParse(xml_file)
+
+# Drop tables if they already exist
+table_names <- c("Article_Authors", "Authors", "Articles", "Journals")
+for (table_name in table_names) {
+  if (dbExistsTable(con, table_name)) {
+    dbExecute(con, paste0("DROP TABLE ", table_name, ";"))
+  }
+}
+
+# Create the tables
+dbExecute(con, "CREATE TABLE journals (id INTEGER PRIMARY KEY, issn TEXT, issn_type TEXT, title TEXT, iso_abbreviation TEXT, volume INTEGER, issue INTEGER, pub_date DATE);")
+dbExecute(con, "CREATE TABLE articles (id INTEGER PRIMARY KEY, pmid INTEGER, title TEXT, journal_id INTEGER, FOREIGN KEY(journal_id) REFERENCES journals(id));")
+dbExecute(con, "CREATE TABLE authors (id INTEGER PRIMARY KEY, last_name TEXT, fore_name TEXT, initials TEXT);")
+dbExecute(con, "CREATE TABLE article_authors (id INTEGER PRIMARY KEY, article_id INTEGER, author_id INTEGER, FOREIGN KEY(article_id) REFERENCES articles(id), FOREIGN KEY(author_id) REFERENCES authors(id));")
+
+# Insert data into tables
+journals_nodes <- getNodeSet(xml_data, "//Journal")
+articles_nodes <- getNodeSet(xml_data, "//Article")
+author_lists_nodes <- getNodeSet(xml_data, "//AuthorList")
+
+journal_index <- 0
+article_index <- 0
+author_index <- 0
+
+for (journal_node in journals_nodes) {
+  journal_index <- journal_index + 1
+  issn <- xpathSApply(journal_node, "./ISSN", xmlValue)
+  issn_type <- xpathSApply(journal_node, "./ISSN/@IssnType", xmlValue)
+  title <- xpathSApply(journal_node, "./Title", xmlValue)
+  iso_abbreviation <- xpathSApply(journal_node, "./ISOAbbreviation", xmlValue)
+  volume <- as.integer(xpathSApply(journal_node, ".//JournalIssue/Volume", xmlValue))
+  issue <- as.integer(xpathSApply(journal_node, ".//JournalIssue/Issue", xmlValue))
+  
+  pub_date <- xpathSApply(journal_node, ".//JournalIssue/PubDate", function(x) {
+    year <- as.integer(xpathSApply(x, "./Year", xmlValue))
+    month <- as.character(xpathSApply(x, "./Month", xmlValue))
+    day <- as.integer(xpathSApply(x, "./Day", xmlValue))
+    return(format(as.Date(paste(year, month, day, sep = "-"), format = "%Y-%b-%d"), "%Y-%m-%d"))
+  })
+  
+  dbExecute(con, "INSERT INTO journals (id, issn, issn_type, title, iso_abbreviation, volume, issue, pub_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?);", params = list(journal_index, issn, issn_type, title, iso_abbreviation, volume, issue, pub_date))
+}
+
+for (article_node in articles_nodes) {
+  article_index <- article_index + 1
+  pmid <- as.integer(xpathSApply(article_node, "./@PMID", xmlValue))
+  article_title <- xpathSApply(article_node, ".//ArticleTitle", xmlValue)
+  journal_id <- as.integer(xpathSApply(article_node, "count(./preceding::Journal) + 1", xmlValue))
+  
+  dbExecute(con, "INSERT INTO articles (id, pmid, title, journal_id) VALUES (?, ?, ?, ?);", params = list(article_index, pmid, article_title, journal_id))
+}
+
+for (author_list_node in author_lists_nodes) {
+  article_id <- as.integer(xpathSApply(author_list_node, "count(./preceding::Article) + 1", xmlValue))
+  
+  authors_nodes <- getNodeSet(author_list_node, "./Author")
+  for (author_node in authors_nodes) {
+    author_index <- author_index + 1
+    last_name <- xpathSApply(author_node, "./LastName", xmlValue)
+    fore_name <- xpathSApply(author_node, "./ForeName", xmlValue)
+    initials <- xpathSApply(author_node, "./Initials", xmlValue)
+    
+    dbExecute(con, "INSERT INTO authors (id, last_name, fore_name, initials) VALUES (?, ?, ?, ?);", params = list(author_index, last_name, fore_name, initials))
+    dbExecute(con, "INSERT INTO article_authors (article_id, author_id) VALUES (?, ?);", params = list(article_id, author_index))
+  }
+}
+
+# Close the connection to the database
+dbDisconnect(con)
+  

@@ -1,0 +1,10 @@
+"0","```sql
+
+-- Inspect the query plan in SQLite
+
+explain query plan
+select * 
+from film
+where rating = \"PG\"
+
+```"

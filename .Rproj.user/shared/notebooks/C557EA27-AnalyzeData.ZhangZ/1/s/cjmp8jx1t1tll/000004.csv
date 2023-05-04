@@ -1,0 +1,20 @@
+"0","
+-- Top journal with the most articles per year.
+
+WITH yearly_journal_articles AS (
+  SELECT journal_name, year, SUM(num_articles) AS total_articles
+  FROM journal_fact
+  GROUP BY journal_name, year
+)
+, max_yearly_articles AS (
+  SELECT year, MAX(total_articles) AS max_articles
+  FROM yearly_journal_articles
+  GROUP BY year
+)
+SELECT yja.journal_name, yja.year, yja.total_articles
+FROM yearly_journal_articles yja
+JOIN max_yearly_articles mya ON yja.year = mya.year AND yja.total_articles = mya.max_articles
+ORDER BY yja.year
+
+
+"

@@ -1,0 +1,187 @@
+---
+title: "R Notebook"
+Author: Zhongwei Zhang
+---
+
+<!-- Task 1 -->
+```{r}
+knitr::include_graphics("https://i.imgur.com/oOa3AkQ.jpg")
+```
+
+
+<!-- Task 2 -->
+```{r}
+library(RSQLite)
+
+# Create a connection to the SQLite database (creates a new file if it doesn't exist)
+db <- dbConnect(RSQLite::SQLite(), dbname = "books_database.db")
+```
+
+
+```{sql connection=db}
+
+--Create Authors table
+CREATE TABLE IF NOT EXISTS authors (
+  author_id INTEGER PRIMARY KEY,
+  author_name TEXT NOT NULL)
+```
+
+```{sql connection=db}
+
+--Create Books table
+CREATE TABLE IF NOT EXISTS books (
+   book_id INTEGER PRIMARY KEY,
+   title TEXT NOT NULL,
+   genre TEXT,
+   price REAL,
+   publish_date DATE,
+   description TEXT,
+   edition INTEGER)
+
+```
+
+```{sql connection=db}
+
+--Create Authorship table
+CREATE TABLE IF NOT EXISTS authorship (
+   authorship_id INTEGER PRIMARY KEY,
+   author_id INTEGER NOT NULL,
+   book_id INTEGER NOT NULL,
+   FOREIGN KEY (author_id) REFERENCES authors (author_id),
+   FOREIGN KEY (book_id) REFERENCES books (book_id))
+
+
+```
+
+<!-- Task 3 -->
+```{r}
+library(XML)
+
+xmlFile <- "Books-v3.xml"
+xmlObj <- xmlParse(xmlFile)
+
+# Extract data from XML
+author_nodes <- getNodeSet(xmlObj, "/catalog/book/author")
+book_nodes <- getNodeSet(xmlObj, "/catalog/book")
+
+# Initialize data frame variables
+authors_df <- data.frame(author_id = integer(0), author_name = character(0), stringsAsFactors = FALSE)
+books_df <- data.frame(book_id = character(0), title = character(0), genre = character(0),
+                       price = numeric(0), publish_date = character(0), description = character(0),
+                       edition = integer(0), author_id = integer(0), stringsAsFactors = FALSE)
+authorship_df <- data.frame(authorship_id = integer(0), author_id = integer(0), book_id = character(0), stringsAsFactors = FALSE)
+
+# Surrogate key for Authors
+author_id <- 0
+
+# Loop through each book node
+for (i in seq_along(book_nodes)) {
+  book_node <- book_nodes[[i]]
+  author_name <- xmlValue(author_nodes[[i]])
+  
+  # Check if author is already in authors_df, if not, add them and increment author_id
+  if (!(author_name %in% authors_df$author_name)) {
+    author_id <- author_id + 1
+    authors_df <- rbind(authors_df, data.frame(author_id = author_id, author_name = author_name, stringsAsFactors = FALSE))
+  }
+  
+  # Add book data to books_df
+  book_id <- xmlGetAttr(book_node, "id")
+  title <- xmlValue(getNodeSet(book_node, "./title")[[1]])
+  genre <- xmlValue(getNodeSet(book_node, "./genre")[[1]])
+  price <- as.numeric(xmlValue(getNodeSet(book_node, "./price")[[1]]))
+  publish_date <- format(as.Date(xmlValue(getNodeSet(book_node, "./publish_date")[[1]])), "%Y-%m-%d")
+  description <- xmlValue(getNodeSet(book_node, "./description")[[1]])
+  
+  edition_node <- getNodeSet(book_node, "./edition")
+  if (length(edition_node) > 0) {
+    edition <- as.integer(xmlValue(edition_node[[1]]))
+  } else {
+    edition <- NA
+  }
+  
+  books_df <- rbind(books_df, data.frame(book_id = book_id, title = title, genre = genre,
+                                         price = price, publish_date = publish_date, description = description,
+                                         edition = edition, author_id = author_id, stringsAsFactors = FALSE))
+  
+  # Add authorship data to authorship_df
+  authorship_df <- rbind(authorship_df, data.frame(authorship_id = i, author_id = author_id, book_id = book_id, stringsAsFactors = FALSE))
+}
+
+authors_df
+books_df
+authorship_df
+
+```
+
+
+<!-- Task 4 -->
+```{r}
+# Write data frames to the appropriate tables in the database
+dbWriteTable(db, "Authorship", authorship_df, row.names = FALSE, overwrite = TRUE)
+dbWriteTable(db, "Books", books_df, row.names = FALSE, overwrite = TRUE)
+dbWriteTable(db, "Authors", authors_df, row.names = FALSE, overwrite = TRUE)
+```
+
+
+<!-- Task 5A-->
+```{sql connection=db}
+
+-- What is the number of genres have at least three books?
+SELECT COUNT(DISTINCT genre)
+FROM (
+  SELECT genre, COUNT(*) AS num_books
+  FROM Books
+  GROUP BY genre
+  HAVING num_books >= 3
+) subquery;
+
+```
+<!-- Task 5B-->
+```{sql connection=db}
+
+-- What is the oldest year in which a publication was published?
+SELECT MIN(strftime('%Y', publish_date)) AS oldest_year FROM Books
+
+```
+<!-- Task 5C-->
+```{sql connection=db}
+
+-- Find the number of books and average price for each genre.
+SELECT genre, COUNT(*) AS num_books, AVG(price) AS avg_price 
+FROM Books 
+GROUP BY genre;
+
+```
+
+<!-- Task 5D-->
+```{sql connection=db}
+
+-- List the title and author of all books that are less than 0.8*AVG or more than 1.2*AVG, where AVG is the average price of all books. 
+SELECT b.title, a.author_name
+FROM Books b
+INNER JOIN Authorship ab ON b.book_id = ab.book_id
+INNER JOIN Authors a ON ab.author_id = a.author_id
+WHERE b.price < 0.8 * (SELECT AVG(price) FROM Books)
+   OR b.price > 1.2 * (SELECT AVG(price) FROM Books);
+
+
+
+```
+
+```{r}
+dbDisconnect(db)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

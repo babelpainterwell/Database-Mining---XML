@@ -1,0 +1,98 @@
+---
+title: "DO: Query Databases and Dataframes in R with SQL"
+output: html_notebook
+---
+
+
+```{r}
+library(RSQLite)
+
+
+fpath = getwd()
+dbfile = "/MediaDB.db"
+
+dbcon <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
+
+```
+
+<!-- (20 pts) In the R Notebook, connect to the SQLite MediaDB.db Download MediaDB.dbdatabase and then load, using SQL SELECT, the "invoice_items" table into a data frame called rs. 
+Add a new column to rs for the extended price called ExtPrice that is Quantity times Price. 
+Using R, what is the average extended price (rounded to 2 decimals)? Do not use {sql} chunks for this entire question. You must use all R code; to do the query use one of dbExecute(), dbGetQuery(), or dbSendQuery().
+
+*** should I alter the table? or only manipulate on the rs?-->
+```{r}
+rs <- dbGetQuery(dbcon, "select * from invoice_items")
+
+rs$ExtPrice <- NA
+
+# ***update the database???
+rs$ExtPrice <- rs$Quantity * rs$UnitPrice
+
+average_extended_price <- round(mean(rs$ExtPrice), 2)
+average_extended_price
+
+```
+
+
+<!--(30 pts) Using sqldf, write a SQL query against the data frame rs from the question above that finds 
+1. the total amount for each invoice (i.e., the sum of the extended prices for the invoice_items in each invoice) 
+2. and the number of items in the invoice. So, the result set contains rows that each have the invoice ID, the total, and the number of items. -->
+```{r}
+
+if("sqldf" %in% rownames(installed.packages()) == FALSE) {
+  install.packages("sqldf")
+}
+
+library(sqldf)
+
+sqlCmd = "select InvoiceId, sum(ExtPrice) as Total, count(*) as Num_Items from rs group by InvoiceId"
+q2_result_table = sqldf(sqlCmd)
+q2_result_table 
+
+```
+
+<!--(30 pts) Using R and the result from the prior question, 
+create a scatter plot of the total number of items in an invoice (x axis) versus the total (y axis). Add proper axis labels. -->
+```{r}
+
+plot(x = q2_result_table$Num_Items, y =q2_result_table$Total, xlab="Number of Items", ylab="Total Amount", main="Problem 3 Result")
+```
+
+<!-- (15 pts) Write and execute some combination of R code, loops in R, sqldf, dbWriteTable(), direct SQL ALTER and SQL UPDATE statements that applies a 10% discount to the total amount for each invoice if it has more than 5 items and stores that discounted amount in a new column in the invoices table called DiscPrice. This cannot be solved fully in sqldf nor fully with just a single UPDATE. You will need to use a combination of techniques and some creativity. Any approach will be acceptable. -->
+```{r}
+
+invoice_df <- dbGetQuery(dbcon, "select * from invoices")
+invoice_df$DiscPrice = invoice_df$Total
+invoice_df$num_items = q2_result_table$Num_Items
+
+
+
+for (i in 1:length(invoice_df)) {
+  if (invoice_df[i, 11] > 5) {
+    invoice_df[i, 10] = invoice_df[i, 9] * 0.9
+  }
+}
+
+
+# overwrite the database with invoice_df
+
+dbWriteTable(dbcon, "invoices", invoice_df, overwrite = TRUE)
+dbSendQuery(dbcon, "alter table invoices drop column num_items")
+
+
+
+```
+
+
+<!--(5 pts) Using a separate {r} chunk show that the update in (4) executed properly by displaying a part of the table. -->
+```{r}
+display_df <- dbGetQuery(dbcon, "select * from invoices")
+head(display_df,10)
+
+```
+
+
+```{r}
+dbDisconnect(dbcon)
+```
+

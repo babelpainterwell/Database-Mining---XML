@@ -1,0 +1,289 @@
+---
+title: "Zhonwei Zhang - Query Planning and Indexing"
+output: html_notebook
+---
+
+
+```{r}
+# Library 
+library(RMySQL)
+
+# Local MySQL Server 
+db_user <- "root"
+db_password <- "Zzw@1299123"
+db_host <- "localhost" 
+db_name <- "sakila"
+db_port <- 3306 
+
+mysqldb <- dbConnect(MySQL(), user = db_user, password = db_password,
+                  dbname = db_name, host = db_host, port = db_port)
+```
+
+```{r}
+library(RSQLite)
+
+fpath = getwd()
+dbfile = "/sakila.db"
+
+sqlitedb <- dbConnect(RSQLite::SQLite(), paste0(fpath, dbfile))
+
+```
+
+
+
+<!-- Task1 Create Index SQLite-->
+```{sql connection=sqlitedb}
+
+-- Create a rating index for the rating column of the film table 
+
+create index idx_film_rating 
+on film (rating) 
+
+```
+<!-- Task1 Create Index MySQL-->
+```{sql connection=mysqldb}
+
+-- Create a rating index for the rating column of the film table 
+
+create index idx_film_rating 
+on film (rating) 
+
+```
+
+
+<!-- Task1 SQLite WITH Index -->
+```{sql connection=sqlitedb}
+
+-- Inspect the query plan in SQLite
+
+explain query plan
+select * 
+from film
+where rating = "PG"
+
+```
+Comment: 
+-- The Explain Query Plan operation shows the column rating (not primary key) is searhed rather than scanned linearly
+-- The row represents a SEARCH operation on a table named film, using an index named idx_film_rating. The rating=? condition suggests that the query is looking for rows with a specific rating value.
+-- The use of an index on the rating column may suggest that the query is efficiently using available optimizations to retrieve relevant rows from the film table. 
+
+<!-- Task1 MySQL WITH Index -->
+```{sql connection=mysqldb}
+
+-- Inspect the query plan in MySQL
+
+explain 
+select * 
+from film
+where rating = "PG"
+
+```
+Comment:
+-- The query is selecting data from a table called film, using an index called idx_film_rating to filter the results based on a rating column. 
+-- The query is expected to examine 194 rows in this step of the plan, and the filtered column shows that all rows examined will be selected since the value is 100%. 
+-- The Extra column indicates that the query is using an index condition to satisfy the query, which means that the filtering is being done directly on the index, which can be faster than looking up the actual rows in the table.
+
+<!-- Task1 Drop Index SQLite-->
+```{sql connection=sqlitedb}
+drop index idx_film_rating
+```
+<!-- Task1 Drop Index MySQL-->
+```{sql connection=mysqldb}
+drop index idx_film_rating on film 
+```
+
+
+<!-- Task1 SQLite WITHOUT Index -->
+```{sql connection=sqlitedb}
+
+-- Inspect the query plan in SQLite
+
+explain query plan
+select * 
+from film
+where rating = "PG"
+
+```
+Comment: 
+-- The Explain Query Plan operation shows the column rating (not primary key) is scanned linearly
+-- No index is used 
+-- The row represents a SCAN operation on a table named film, which suggests that the database engine will scan the entire table to retrieve relevant rows for the query.
+<!-- Task1 MySQL WITHOUT Index -->
+```{sql connection=mysqldb}
+
+-- Inspect the query plan in MySQL
+
+explain
+select * 
+from film
+where rating = "PG"
+
+```
+Comment:
+-- The query is selecting data from a table called film, and it is not using an index to filter the results. 
+-- Instead, it is doing a full table scan, which can be slower than using an index. The rows column indicates that 1000 rows will be examined to satisfy this step of the plan, while the filtered column indicates that only 20% of those rows will be selected. 
+-- The Extra column indicates that the WHERE clause is being used to filter the results.
+
+
+<!-- Inspect All Indexes -->
+```{sql connection=sqlitedb}
+SELECT
+   `type`, 
+   `name`, 
+   `tbl_name`, 
+   `sql`
+  FROM sqlite_master
+WHERE `type` = 'index';
+
+```
+
+
+
+<!-- Task2 SQLite -->
+```{sql connection=sqlitedb}
+explain query plan
+select
+    c.customer_id,
+    c.first_name,
+    c.last_name,
+    a.address,
+    ci.city
+from
+    customer c
+join
+    address a on c.address_id = a.address_id
+join
+    city ci on a.city_id = ci.city_id
+```
+Comment: 
+-- Customer table is scanned linearly instead of being searched. However, the joined tables address and city are searched using their primary keys. 
+-- The first row represents a SCAN operation on a table named customer, which suggests that the database engine will scan the entire table to retrieve relevant rows for the query.
+-- The second row represents a SEARCH operation on a table named address, using an index on the INTEGER PRIMARY KEY column. The rowid=? condition suggests that the query is looking for a single row with a specific primary key value.
+-- The third row represents a SEARCH operation on a table named city, using an index on the INTEGER PRIMARY KEY column. The rowid=? condition suggests that the query is also looking for a single row with a specific primary key value.
+
+<!-- Task2 MySQL -->
+```{sql connection=mysqldb}
+explain 
+select
+    c.customer_id,
+    c.first_name,
+    c.last_name,
+    a.address,
+    ci.city
+from
+    customer c
+join
+    address a on c.address_id = a.address_id
+join
+    city ci on a.city_id = ci.city_id
+```
+Comment:
+-- This query execution plan shows that the query is using join operations to look up matching rows in multiple tables using indexes, which can be faster than a full table scan. However, since one of the tables has no index available (the other two are using primary keys as index), a full table scan is required for that table.
+-- The customer table has no index available to use, so it is using a full table scan with type ALL. The rows column indicates that 599 rows will be examined to satisfy this step of the plan, while the filtered column indicates that all rows (100%) will be selected.
+-- The address table is being accessed using a primary key index (PRIMARY) and another index (idx_fk_city_id) with type eq_ref. This indicates that the query is using a join to look up matching rows using the indexes, which can be faster than a full table scan. The key_len column indicates that the primary key index is being used to match on a column of length 2 (address_id), and the rows column indicates that only 1 row will be examined to satisfy this step of the plan. The filtered column indicates that all rows (100%) will be selected.
+-- The city table is being accessed using the primary key index (PRIMARY) with type eq_ref, which means the query is using a join to look up matching rows using the index. The key column specifies that the primary key index is being used, and the rows column indicates that only 1 row will be examined to satisfy this step of the plan. The filtered column indicates that all rows (100%) will be selected.
+
+
+
+<!-- Task3 SQLite -->
+```{sql connection=sqlitedb}
+explain query plan 
+select
+    customer_id,
+    COUNT(*) as num_rentals
+from
+    rental
+where
+    rental_id > 1000
+group by 
+    customer_id
+```
+Comment: 
+-- Customer table is scanned linearly instead of being searched. However, the joined tables address and city are searched using their primary keys. 
+-- The first row represents a SEARCH operation on a table named rental, using an index on the INTEGER PRIMARY KEY column. The rowid>? condition suggests that the query is looking for rows with a primary key greater than a certain value.
+-- The second row represents a GROUP BY operation, for which the database engine will create a temporary B-tree data structure to efficiently group the results of the query.
+-- The use of a temporary B-tree for the GROUP BY operation can help improve query performance.
+<!-- Task3 MySQL -->
+```{sql connection=mysqldb}
+explain
+select
+    customer_id,
+    COUNT(*) as num_rentals
+from
+    rental
+where
+    rental_id > 1000
+group by 
+    customer_id
+```
+Comment:
+-- This query execution plan shows that the query is using an index to filter the rows based on a range of values, which can be faster than a full table scan. However, a temporary table is being used to hold intermediate results.
+-- The type column indicates that a range join type is being used, which means the query is using an index to filter the rows based on a range of values. 
+-- The possible_keys column lists the possible indexes that could be used for this query. 
+-- The key column specifies that the primary key index (PRIMARY) is being used to satisfy this step of the plan, and the key_len column indicates that the index key is 4 bytes long.
+-- The ref column is NA, indicating that the index is not being used to join with another table. 
+-- The rows column indicates that 7915 rows will be examined to satisfy this step of the plan, while the filtered column indicates that all rows (100%) will be selected. 
+-- The Extra column indicates that the query is using a temporary table to hold intermediate results, and the WHERE clause is being used to filter the rows based on a range of values.
+
+
+<!-- Task4 SQLite -->
+```{sql connection=sqlitedb}
+-- Returns the top 5 categories with the highest average rental duration for films in each category. 
+-- Use the film, film_category, and category tables for this query. 
+-- This query demonstrates the use of join, group by, and the avg and limit functions.
+explain query plan
+select
+    c.name as category_name,
+    AVG(f.rental_duration) as avg_rental_duration
+from
+    film f
+join
+    film_category fc on f.film_id = fc.film_id
+join
+    category c on fc.category_id = c.category_id
+group by
+    c.name
+order by
+    avg_rental_duration desc
+limit 5;
+
+```
+Comment:
+-- The first row represents a SCAN operation on a table named film_category, using a covering index named sqlite_autoindex_film_category_1. This suggests that the query will retrieve all rows from the film_category table, possibly as part of a join operation with other tables.
+-- The second row represents a SEARCH operation on a table named film, using the primary key INTEGER PRIMARY KEY. The rowid=? condition suggests that the query is looking for a single row with a specific primary key value.
+-- The third row represents a SEARCH operation on a table named category, using the primary key INTEGER PRIMARY KEY. The rowid=? condition suggests that the query is also looking for a single row with a specific primary key value.
+-- The fourth row represents a GROUP BY operation, for which the database engine will create a temporary B-tree data structure to efficiently group the results of the query.
+-- The fifth row represents a ORDER BY operation, for which the database engine will create a temporary B-tree data structure to efficiently order the results of the query.
+--  In this case, the use of covering index on the film_category table and the creation of temporary B-tree data structures for GROUP BY and ORDER BY operations suggest that the query is using available optimizations to improve query performance.
+<!-- Task4 MySQL -->
+```{sql connection=mysqldb}
+explain
+select
+    c.name as category_name,
+    AVG(f.rental_duration) as avg_rental_duration
+from
+    film f
+join
+    film_category fc on f.film_id = fc.film_id
+join
+    category c on fc.category_id = c.category_id
+group by
+    c.name
+order by
+    avg_rental_duration desc
+limit 5;
+```
+Comment:
+-- The categpry table is being accessed with a full table scan (type ALL) and will examine 16 rows. The filtered column indicates that all rows (100%) will be selected. The Extra column indicates that a temporary table is being used, and a filesort will be performed to sort the results.
+-- The film_category table is being accessed with an index lookup (type ref) using the category_id column. The key column specifies that the index being used is fk_film_category_category, and the key_len column indicates that the index key is 1 byte long. The rows and filtered columns indicate that 62% of the rows will be examined and selected by this step of the plan. The Extra column indicates that the index is being used to satisfy the query and avoid a full table scan.
+-- The film table is being accessed with a primary key lookup (type eq_ref) using the film_id column. The key column specifies that the primary key index is being used, and the key_len column indicates that the index key is 2 bytes long. The rows column indicates that only 1 row will be examined to satisfy this step of the plan. The filtered column indicates that all rows (100%) will be selected.
+
+```{r}
+dbDisconnect(sqlitedb)
+```
+
+```{r}
+dbDisconnect(mysqldb)
+```
+
+

@@ -1,0 +1,18 @@
+"0","```r
+
+# Save to existing schemas 
+
+dbWriteTable(mydb, \"airports\", df.airports,  append = TRUE, row.names = FALSE, overwrite = FALSE)
+```"
+"1","[1] TRUE
+"
+"0","```r
+dbWriteTable(mydb, \"conditions\", df.conditions, append = TRUE, row.names = FALSE, overwrite = FALSE)
+```"
+"1","[1] TRUE
+"
+"0","```r
+dbWriteTable(mydb, \"incidents\", df.incidents, append = TRUE, row.names = FALSE, overwrite = FALSE)
+```"
+"1","[1] TRUE
+"
